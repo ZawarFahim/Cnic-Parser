@@ -2,15 +2,29 @@ import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { User, Users, CreditCard, Zap, Calendar, MapPin, Copy, Check, BadgeCheck } from 'lucide-react'
 
-export function FieldCard({ icon, label, value, index = 0 }) {
+export function FieldCard({ icon, label, value, index = 0, fullWidth = false }) {
   const [copied, setCopied] = useState(false)
   const handleCopy = async () => {
     try { await navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch {}
   }
   return (
     <motion.div
-      style={{ display: 'flex', alignItems: 'flex-start', gap: '9px', padding: '8px 10px', borderRadius: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s', cursor: 'default', position: 'relative' }}
-      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: index * 0.04 }}
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '9px',
+        padding: '8px 10px',
+        borderRadius: '8px',
+        background: 'rgba(255,255,255,0.02)',
+        border: '1px solid rgba(255,255,255,0.05)',
+        transition: 'all 0.2s',
+        cursor: 'default',
+        position: 'relative',
+        gridColumn: fullWidth ? 'span 2' : 'auto'
+      }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.04 }}
       whileHover={{ background: 'rgba(16,185,129,0.04)', borderColor: 'rgba(16,185,129,0.15)' }}
     >
       <div style={{ width: '26px', height: '26px', borderRadius: '7px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -38,6 +52,7 @@ const MOCK = {
   dob: '01-01-1990', doi: '15-03-2018', doe: '14-03-2028',
   address: 'House 12, Street 5, Block B, Model Town, Lahore',
 }
+
 const FIELDS = [
   { icon: <User size={12} />,       label: 'Full Name',      key: 'fullName'   },
   { icon: <Users size={12} />,      label: "Father's Name",  key: 'fatherName' },
@@ -46,6 +61,7 @@ const FIELDS = [
   { icon: <Calendar size={12} />,   label: 'Date of Birth',  key: 'dob'        },
   { icon: <Calendar size={12} />,   label: 'Date of Issue',  key: 'doi'        },
   { icon: <Calendar size={12} />,   label: 'Date of Expiry', key: 'doe'        },
+  { icon: <MapPin size={12} />,     label: 'Address',        key: 'address'    },
 ]
 
 export default function ResultCard({ data = MOCK, onReset }) {
@@ -56,22 +72,20 @@ export default function ResultCard({ data = MOCK, onReset }) {
   }
   return (
     <div className="card" style={{ overflow: 'hidden', background: '#141414' }}>
-      {/* Green top glow line */}
       <div style={{ height: '2px', background: 'linear-gradient(90deg, transparent, #10b981, #34d399, transparent)', boxShadow: '0 0 12px rgba(16,185,129,0.4)' }} />
 
-      {/* Header */}
       <div style={{ padding: '12px 16px 10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <motion.div
-              style={{ width: '32px', height: '32px', borderRadius: '9px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ width: '32px', height: '32px', borderRadius: '999px', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 280, damping: 18 }}
             >
               <BadgeCheck size={16} style={{ color: '#10b981' }} />
             </motion.div>
             <div>
               <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: '0.875rem', color: '#f1f1f1' }}>Extraction Complete</h2>
-              <span className="badge badge-success" style={{ marginTop: '3px', display: 'inline-flex', fontSize: '0.58rem' }}>✓ 7 fields extracted</span>
+              <span className="badge badge-success" style={{ marginTop: '3px', display: 'inline-flex', fontSize: '0.58rem' }}>✓ 8 fields extracted</span>
             </div>
           </div>
           <div style={{ display: 'flex', gap: '6px' }}>
@@ -83,7 +97,6 @@ export default function ResultCard({ data = MOCK, onReset }) {
           </div>
         </div>
 
-        {/* Confidence */}
         <div style={{ marginTop: '10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: '#444', marginBottom: '4px' }}>
             <span>Confidence Score</span>
@@ -96,10 +109,9 @@ export default function ResultCard({ data = MOCK, onReset }) {
         </div>
       </div>
 
-      {/* Fields grid */}
       <div style={{ padding: '12px 16px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px' }}>
-          {FIELDS.map((f, i) => <FieldCard key={f.key} icon={f.icon} label={f.label} value={data[f.key]} index={i} />)}
+          {FIELDS.map((f, i) => <FieldCard key={f.key} icon={f.icon} label={f.label} value={data[f.key]} index={i} fullWidth={f.key === 'address'} />)}
         </div>
       </div>
 
