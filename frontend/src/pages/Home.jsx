@@ -35,8 +35,7 @@ export default function Home() {
       
       const data = await response.json()
       
-      // Map schema response (name, father_name, cnic_number, gender, date_of_birth, date_of_issue, date_of_expiry, address)
-      // to fields expected by ResultCard (fullName, fatherName, cnic, gender, dob, doi, doe, address)
+      // Map schema response to fields expected by ResultCard
       const mappedData = {
         fullName: data.name || '',
         fatherName: data.father_name || '',
@@ -44,8 +43,7 @@ export default function Home() {
         gender: data.gender || '',
         dob: data.date_of_birth || '',
         doi: data.date_of_issue || '',
-        doe: data.date_of_expiry || '',
-        address: data.address || ''
+        doe: data.date_of_expiry || ''
       }
       
       setExtractedData(mappedData)
@@ -111,91 +109,122 @@ export default function Home() {
         </span>
       </header>
 
-      {/* ─── MAIN: Vertical Stack ─── */}
+      {/* ─── MAIN: Centered Viewport ─── */}
       <main style={{
         flex: 1,
         position: 'relative',
         zIndex: 1,
         display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-        padding: '16px 36px',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px 36px',
+        overflowY: 'auto',
         minHeight: 0,
-        overflow: 'hidden',
       }}>
+        <div style={{
+          width: '100%',
+          maxWidth: '800px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <AnimatePresence mode="wait">
 
-        {/* ── TOP: Upload / Processing (fixed height) ── */}
-        <div style={{ flexShrink: 0, height: '260px' }}>
-          <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 600, fontSize: '0.7rem', color: '#555', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Upload CNIC
-          </p>
-          <div style={{ height: 'calc(100% - 24px)' }}>
-            <AnimatePresence mode="wait">
-              {(appState === STATE.IDLE || appState === STATE.RESULT || appState === STATE.ERROR) && (
-                <motion.div key="upload" style={{ height: '100%' }}
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            {/* 1. IDLE STATE: Upload Card */}
+            {appState === STATE.IDLE && (
+              <motion.div
+                key="idle-upload"
+                style={{ width: '100%' }}
+                initial={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{
+                  opacity: 0,
+                  scale: 0.95,
+                  y: -30,
+                  transition: { duration: 0.5, ease: 'easeInOut' }
+                }}
+              >
+                <div style={{ height: '260px' }}>
                   <UploadCard onFileSelect={handleFileSelect} onProcess={handleProcess} />
-                </motion.div>
-              )}
-              {appState === STATE.PROCESSING && (
-                <motion.div key="proc" style={{ height: '100%' }}
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+                </div>
+              </motion.div>
+            )}
+
+            {/* 2. PROCESSING STATE: Centered Scanning Card */}
+            {appState === STATE.PROCESSING && (
+              <motion.div
+                key="processing-loader"
+                style={{ width: '100%' }}
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+              >
+                <div style={{ height: '320px' }}>
                   <ProcessingCard previewUrl={previewUrl} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
+                </div>
+              </motion.div>
+            )}
 
-        {/* ── BOTTOM: Extracted Data (fills remaining space, vertically centered) ── */}
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <p style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 600, fontSize: '0.7rem', color: '#555', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>
-            Extracted Data
-          </p>
+            {/* 3. RESULT STATE: Centered Result Card + Scan Another Button */}
+            {appState === STATE.RESULT && (
+              <motion.div
+                key="result-card"
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '16px',
+                }}
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{
+                  opacity: 0,
+                  scale: 0.95,
+                  y: 20,
+                  transition: { duration: 0.4, ease: 'easeInOut' }
+                }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+              >
+                <ResultCard data={extractedData} onReset={handleReset} />
+                
+                <motion.button
+                  className="btn btn-primary"
+                  style={{
+                    fontSize: '0.78rem',
+                    padding: '9px 20px',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 12px rgba(16,185,129,0.25)',
+                  }}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleReset}
+                >
+                  <Scan size={13} />
+                  Scan Another CNIC
+                </motion.button>
+              </motion.div>
+            )}
 
-          {/* Scrollable result container, content vertically centered when empty */}
-          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-            <AnimatePresence mode="wait">
+            {/* 4. ERROR STATE: Error Card */}
+            {appState === STATE.ERROR && (
+              <motion.div
+                key="error-card"
+                style={{ width: '100%' }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.3 }}
+              >
+                <ErrorCard type="failed_extraction" onRetry={handleRetry} onReset={handleReset} />
+              </motion.div>
+            )}
 
-              {/* IDLE — centered empty state */}
-              {appState === STATE.IDLE && (
-                <motion.div key="empty" className="card"
-                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <EmptyState />
-                </motion.div>
-              )}
-
-              {/* PROCESSING — centered spinner */}
-              {appState === STATE.PROCESSING && (
-                <motion.div key="proc-wait" className="card"
-                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}>
-                      <Scan size={24} style={{ color: '#10b981' }} />
-                    </motion.div>
-                    <p style={{ fontSize: '0.72rem', color: '#555', fontFamily: "'JetBrains Mono',monospace" }}>Analyzing document…</p>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* RESULT — full result card */}
-              {appState === STATE.RESULT && (
-                <motion.div key="result" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-                  <ResultCard data={extractedData} onReset={handleReset} />
-                </motion.div>
-              )}
-
-              {/* ERROR */}
-              {appState === STATE.ERROR && (
-                <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <ErrorCard type="failed_extraction" onRetry={handleRetry} onReset={handleReset} />
-                </motion.div>
-              )}
-
-            </AnimatePresence>
-          </div>
+          </AnimatePresence>
         </div>
       </main>
 

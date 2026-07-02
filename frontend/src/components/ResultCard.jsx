@@ -46,7 +46,6 @@ const FIELDS = [
   { icon: <Calendar size={12} />,   label: 'Date of Birth',  key: 'dob'        },
   { icon: <Calendar size={12} />,   label: 'Date of Issue',  key: 'doi'        },
   { icon: <Calendar size={12} />,   label: 'Date of Expiry', key: 'doe'        },
-  { icon: <MapPin size={12} />,     label: 'Address',        key: 'address'    },
 ]
 
 export default function ResultCard({ data = MOCK, onReset }) {
@@ -72,7 +71,7 @@ export default function ResultCard({ data = MOCK, onReset }) {
             </motion.div>
             <div>
               <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: '0.875rem', color: '#f1f1f1' }}>Extraction Complete</h2>
-              <span className="badge badge-success" style={{ marginTop: '3px', display: 'inline-flex', fontSize: '0.58rem' }}>✓ 8 fields extracted</span>
+              <span className="badge badge-success" style={{ marginTop: '3px', display: 'inline-flex', fontSize: '0.58rem' }}>✓ 7 fields extracted</span>
             </div>
           </div>
           <div style={{ display: 'flex', gap: '6px' }}>
