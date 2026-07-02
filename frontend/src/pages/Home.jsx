@@ -14,11 +14,48 @@ export default function Home() {
   const [appState,   setAppState]   = useState(STATE.IDLE)
   const [file,       setFile]       = useState(null)
   const [previewUrl, setPreviewUrl] = useState(null)
+  const [extractedData, setExtractedData] = useState(null)
 
   const handleFileSelect = (f) => { setFile(f); setPreviewUrl(URL.createObjectURL(f)) }
-  const handleProcess    = () => { if (!file) return; setAppState(STATE.PROCESSING); setTimeout(() => setAppState(STATE.RESULT), 4200) }
-  const handleReset      = () => { setFile(null); if (previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(null); setAppState(STATE.IDLE) }
-  const handleRetry      = () => { setAppState(STATE.PROCESSING); setTimeout(() => setAppState(STATE.RESULT), 4200) }
+  const handleProcess    = async () => {
+    if (!file) return
+    setAppState(STATE.PROCESSING)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      const response = await fetch('http://localhost:8000/extract', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to parse CNIC document.')
+      }
+      
+      const data = await response.json()
+      
+      // Map schema response (name, father_name, cnic_number, gender, date_of_birth, date_of_issue, date_of_expiry, address)
+      // to fields expected by ResultCard (fullName, fatherName, cnic, gender, dob, doi, doe, address)
+      const mappedData = {
+        fullName: data.name || '',
+        fatherName: data.father_name || '',
+        cnic: data.cnic_number || '',
+        gender: data.gender || '',
+        dob: data.date_of_birth || '',
+        doi: data.date_of_issue || '',
+        doe: data.date_of_expiry || '',
+        address: data.address || ''
+      }
+      
+      setExtractedData(mappedData)
+      setAppState(STATE.RESULT)
+    } catch (err) {
+      setAppState(STATE.ERROR)
+    }
+  }
+  const handleReset      = () => { setFile(null); if (previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(null); setExtractedData(null); setAppState(STATE.IDLE) }
+  const handleRetry      = () => { handleProcess() }
 
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl) }, [previewUrl])
 
@@ -146,7 +183,7 @@ export default function Home() {
               {/* RESULT — full result card */}
               {appState === STATE.RESULT && (
                 <motion.div key="result" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-                  <ResultCard onReset={handleReset} />
+                  <ResultCard data={extractedData} onReset={handleReset} />
                 </motion.div>
               )}
 
