@@ -1,7 +1,7 @@
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
-from app.config.settings import settings
-from app.models.cnic import CNICData
+from ..config.settings import settings
+from ..models.cnic import CNICData
 
 api_key = settings.GOOGLE_API_KEY or "DUMMY_API_KEY"
 
