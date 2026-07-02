@@ -6,19 +6,26 @@ from app.services import vision, llm, storage
 router = APIRouter()
 
 @router.post("/extract")
-async def extract_single_image(file: UploadFile = File(...)):
-    front_bytes = await file.read()
+async def extract_double_image(
+    front_image: UploadFile = File(...),
+    back_image: UploadFile = File(...)
+):
+    front_bytes = await front_image.read()
+    back_bytes = await back_image.read()
 
     try:
         front_text = vision.extract_text(front_bytes)
+        back_text = vision.extract_text(back_bytes)
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"OCR extraction failed: {str(e)}"
         )
 
+    combined_text = f"{front_text}\n{back_text}"
+
     try:
-        cnic_data = llm.extract_cnic_data(front_text)
+        cnic_data = llm.extract_cnic_data(combined_text)
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -33,8 +40,10 @@ async def extract_single_image(file: UploadFile = File(...)):
         date_of_birth=cnic_data.date_of_birth,
         date_of_issue=cnic_data.date_of_issue,
         expiry_date=cnic_data.expiry_date,
+        address=cnic_data.address,
         created_at=datetime.utcnow(),
-        raw_front_text=front_text
+        raw_front_text=front_text,
+        raw_back_text=back_text
     )
 
     try:
@@ -52,25 +61,31 @@ async def extract_single_image(file: UploadFile = File(...)):
         "gender": cnic_data.gender,
         "date_of_birth": cnic_data.date_of_birth,
         "date_of_issue": cnic_data.date_of_issue,
-        "date_of_expiry": cnic_data.expiry_date
+        "date_of_expiry": cnic_data.expiry_date,
+        "address": cnic_data.address
     }
 
 @router.post("/cnic/upload", response_model=CNICResponse)
 async def upload_cnic(
-    front_image: UploadFile = File(...)
+    front_image: UploadFile = File(...),
+    back_image: UploadFile = File(...)
 ):
     front_bytes = await front_image.read()
+    back_bytes = await back_image.read()
 
     try:
         front_text = vision.extract_text(front_bytes)
+        back_text = vision.extract_text(back_bytes)
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"OCR extraction failed: {str(e)}"
         )
 
+    combined_text = f"{front_text}\n{back_text}"
+
     try:
-        cnic_data = llm.extract_cnic_data(front_text)
+        cnic_data = llm.extract_cnic_data(combined_text)
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -85,8 +100,10 @@ async def upload_cnic(
         date_of_birth=cnic_data.date_of_birth,
         date_of_issue=cnic_data.date_of_issue,
         expiry_date=cnic_data.expiry_date,
+        address=cnic_data.address,
         created_at=datetime.utcnow(),
-        raw_front_text=front_text
+        raw_front_text=front_text,
+        raw_back_text=back_text
     )
 
     try:

@@ -6,57 +6,70 @@ import UploadCard     from '../components/UploadCard'
 import ProcessingCard from '../components/ProcessingCard'
 import ResultCard     from '../components/ResultCard'
 import ErrorCard      from '../components/ErrorCard'
-import { useFileUpload } from '../hooks/useFileUpload'
 
 const STATE = { IDLE: 'idle', PROCESSING: 'processing', RESULT: 'result', ERROR: 'error' }
 
 export default function Home() {
   const [appState, setAppState] = useState(STATE.IDLE)
+  const [frontFile, setFrontFile] = useState(null)
+  const [backFile, setBackFile] = useState(null)
+  const [frontPreviewUrl, setFrontPreviewUrl] = useState(null)
+  const [backPreviewUrl, setBackPreviewUrl] = useState(null)
   const [extractedData, setExtractedData] = useState(null)
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
-
-  const frontUpload = useFileUpload()
-  const backUpload = useFileUpload()
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768)
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+    if (frontFile) {
+      const url = URL.createObjectURL(frontFile)
+      setFrontPreviewUrl(url)
+      return () => URL.revokeObjectURL(url)
+    } else {
+      setFrontPreviewUrl(null)
+    }
+  }, [frontFile])
+
+  useEffect(() => {
+    if (backFile) {
+      const url = URL.createObjectURL(backFile)
+      setBackPreviewUrl(url)
+      return () => URL.revokeObjectURL(url)
+    } else {
+      setBackPreviewUrl(null)
+    }
+  }, [backFile])
 
   const handleProcess = async () => {
-    if (!frontUpload.file || !backUpload.file) {
+    if (!frontFile || !backFile) {
+      alert("Please upload both the front and back images of your CNIC.")
       return
     }
     setAppState(STATE.PROCESSING)
     try {
       const formData = new FormData()
-      formData.append('front_image', frontUpload.file)
-      formData.append('back_image', backUpload.file)
-
-      const response = await fetch('http://localhost:8000/cnic/upload', {
+      formData.append('front_image', frontFile)
+      formData.append('back_image', backFile)
+      
+      const response = await fetch('http://localhost:8000/extract', {
         method: 'POST',
         body: formData,
       })
-
+      
       if (!response.ok) {
         throw new Error('Failed to parse CNIC document.')
       }
-
-      const result = await response.json()
-      const data = result.data || {}
-
+      
+      const data = await response.json()
+      
       const mappedData = {
         fullName: data.name || '',
         fatherName: data.father_name || '',
         cnic: data.cnic_number || '',
-        gender: 'N/A',
+        gender: data.gender || '',
         dob: data.date_of_birth || '',
-        doi: 'N/A',
-        doe: data.expiry_date || '',
+        doi: data.date_of_issue || '',
+        doe: data.date_of_expiry || '',
         address: data.address || ''
       }
-
+      
       setExtractedData(mappedData)
       setAppState(STATE.RESULT)
     } catch (err) {
@@ -65,8 +78,8 @@ export default function Home() {
   }
 
   const handleReset = () => {
-    frontUpload.clearFile()
-    backUpload.clearFile()
+    setFrontFile(null)
+    setBackFile(null)
     setExtractedData(null)
     setAppState(STATE.IDLE)
   }
@@ -77,17 +90,21 @@ export default function Home() {
 
   return (
     <div style={{ height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: '#0d0d0d' }}>
+
+      {/* Subtle background grid */}
       <div className="fixed inset-0 pointer-events-none" style={{
         backgroundImage: 'radial-gradient(circle, rgba(16,185,129,0.04) 1px, transparent 1px)',
         backgroundSize: '28px 28px',
         zIndex: 0,
       }} />
+      {/* Green radial glow - top left */}
       <div className="fixed pointer-events-none" style={{
         top: 0, left: 0, width: '500px', height: '500px',
         background: 'radial-gradient(ellipse, rgba(16,185,129,0.06) 0%, transparent 65%)',
         zIndex: 0,
       }} />
 
+      {/* ─── HEADER ─── */}
       <header style={{
         flexShrink: 0,
         position: 'relative',
@@ -100,8 +117,10 @@ export default function Home() {
         background: '#111111',
         borderBottom: '1px solid rgba(16,185,129,0.15)',
       }}>
+        {/* Green top accent line */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, transparent, #10b981, #34d399, transparent)' }} />
 
+        {/* Logo + name + tagline */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Logo size="md" variant="icon" animate={false} />
           <div>
@@ -114,12 +133,14 @@ export default function Home() {
           </div>
         </div>
 
+        {/* AI badge */}
         <span className="badge badge-brand" style={{ fontSize: '0.62rem' }}>
           <Scan size={9} />
           AI Powered
         </span>
       </header>
 
+      {/* ─── MAIN: Centered Viewport ─── */}
       <main style={{
         flex: 1,
         position: 'relative',
@@ -133,17 +154,25 @@ export default function Home() {
       }}>
         <div style={{
           width: '100%',
-          maxWidth: '800px',
+          maxWidth: '850px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
         }}>
           <AnimatePresence mode="wait">
+
+            {/* 1. IDLE STATE: Two Upload Cards Side-by-Side */}
             {appState === STATE.IDLE && (
               <motion.div
                 key="idle-upload"
-                style={{ width: '100%' }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '20px',
+                  alignItems: 'center'
+                }}
                 initial={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{
                   opacity: 0,
@@ -152,57 +181,55 @@ export default function Home() {
                   transition: { duration: 0.5, ease: 'easeInOut' }
                 }}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', gap: '16px', width: '100%', flexDirection: isMobile ? 'column' : 'row', height: isMobile ? 'auto' : '260px' }}>
-                    <div style={{ flex: 1, height: isMobile ? '230px' : '100%' }}>
-                      <UploadCard
-                        title="Front Side"
-                        subtitle="Upload the front image of your CNIC"
-                        file={frontUpload.file}
-                        preview={frontUpload.previewUrl}
-                        error={frontUpload.error}
-                        onFileSelect={frontUpload.handleFile}
-                        onClear={frontUpload.clearFile}
-                      />
-                    </div>
-                    <div style={{ flex: 1, height: isMobile ? '230px' : '100%' }}>
-                      <UploadCard
-                        title="Back Side"
-                        subtitle="Upload the back image of your CNIC"
-                        file={backUpload.file}
-                        preview={backUpload.previewUrl}
-                        error={backUpload.error}
-                        onFileSelect={backUpload.handleFile}
-                        onClear={backUpload.clearFile}
-                      />
-                    </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                  gap: '16px',
+                  width: '100%'
+                }}>
+                  <div style={{ height: '240px' }}>
+                    <UploadCard
+                      title="Front Side"
+                      subtitle="Upload the front image of your CNIC"
+                      file={frontFile}
+                      onFileSelect={setFrontFile}
+                    />
                   </div>
-
-                  <motion.button
-                    className="btn btn-primary"
-                    disabled={!frontUpload.file || !backUpload.file}
-                    onClick={handleProcess}
-                    style={{
-                      fontSize: '0.78rem',
-                      padding: '9px 20px',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      opacity: (!frontUpload.file || !backUpload.file) ? 0.5 : 1,
-                      cursor: (!frontUpload.file || !backUpload.file) ? 'not-allowed' : 'pointer',
-                      boxShadow: (frontUpload.file && backUpload.file) ? '0 4px 12px rgba(16,185,129,0.25)' : 'none',
-                    }}
-                    whileHover={frontUpload.file && backUpload.file ? { scale: 1.03 } : {}}
-                    whileTap={frontUpload.file && backUpload.file ? { scale: 0.97 } : {}}
-                  >
-                    <Scan size={13} />
-                    Extract Information
-                  </motion.button>
+                  <div style={{ height: '240px' }}>
+                    <UploadCard
+                      title="Back Side"
+                      subtitle="Upload the back image of your CNIC"
+                      file={backFile}
+                      onFileSelect={setBackFile}
+                    />
+                  </div>
                 </div>
+
+                <motion.button
+                  className="btn btn-primary"
+                  style={{
+                    fontSize: '0.8rem',
+                    padding: '10px 24px',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 12px rgba(16,185,129,0.25)',
+                    opacity: (!frontFile || !backFile) ? 0.5 : 1,
+                    cursor: (!frontFile || !backFile) ? 'not-allowed' : 'pointer'
+                  }}
+                  disabled={!frontFile || !backFile}
+                  whileHover={frontFile && backFile ? { scale: 1.03 } : {}}
+                  whileTap={frontFile && backFile ? { scale: 0.97 } : {}}
+                  onClick={handleProcess}
+                >
+                  <Scan size={14} />
+                  Extract Information
+                </motion.button>
               </motion.div>
             )}
 
+            {/* 2. PROCESSING STATE: Centered Scanning Card */}
             {appState === STATE.PROCESSING && (
               <motion.div
                 key="processing-loader"
@@ -213,11 +240,12 @@ export default function Home() {
                 transition={{ duration: 0.4, ease: 'easeOut' }}
               >
                 <div style={{ height: '320px' }}>
-                  <ProcessingCard previewUrl={frontUpload.previewUrl} />
+                  <ProcessingCard previewUrl={frontPreviewUrl} />
                 </div>
               </motion.div>
             )}
 
+            {/* 3. RESULT STATE: Centered Result Card + Scan Another Button */}
             {appState === STATE.RESULT && (
               <motion.div
                 key="result-card"
@@ -261,6 +289,7 @@ export default function Home() {
               </motion.div>
             )}
 
+            {/* 4. ERROR STATE: Error Card */}
             {appState === STATE.ERROR && (
               <motion.div
                 key="error-card"
@@ -273,10 +302,12 @@ export default function Home() {
                 <ErrorCard type="failed_extraction" onRetry={handleRetry} onReset={handleReset} />
               </motion.div>
             )}
+
           </AnimatePresence>
         </div>
       </main>
 
+      {/* ─── FOOTER ─── */}
       <footer style={{
         flexShrink: 0,
         position: 'relative',
