@@ -8,6 +8,7 @@ import ResultCard     from '../components/ResultCard'
 import ErrorCard      from '../components/ErrorCard'
 
 const STATE = { IDLE: 'idle', PROCESSING: 'processing', RESULT: 'result', ERROR: 'error' }
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 export default function Home() {
   const [appState, setAppState] = useState(STATE.IDLE)
@@ -48,7 +49,7 @@ export default function Home() {
       formData.append('front_image', frontFile)
       formData.append('back_image', backFile)
       
-      const response = await fetch('http://localhost:8000/extract', {
+      const response = await fetch(`${BASE_URL}/extract`, {
         method: 'POST',
         body: formData,
       })
