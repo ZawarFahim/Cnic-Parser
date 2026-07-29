@@ -153,6 +153,27 @@ FastAPI automatically serves interactive OpenAPI documentation at `http://localh
 
 ---
 
+## 🌐 Deployment Options
+
+Since this project contains a Python backend service, it is ideal to host it on platforms that support running active servers (unlike pure static hosting like Vercel). 
+
+Detailed setup instructions for various providers are documented in our [Deployment Guide](file:///C:/Users/zawar/.gemini/antigravity-ide/brain/d0801b18-2edc-4667-b213-6902cfa59a51/deployment_guide.md). Here is a quick overview of the available methods:
+
+### 1. Render.com (Recommended Free Alternative)
+- **Backend:** Deploy as a **Web Service** using Python 3 or our `backend/Dockerfile`. Set up your environment variables (`MONGO_URI`, `GOOGLE_API_KEY`, etc.) and upload your `vision-key.json` as a **Secret File**.
+- **Frontend:** Deploy as a **Static Site** reading from your Render backend API URL. Add a rewrite rule for `/* -> /index.html` to support React.
+
+### 2. Railway.app (Easy Docker Setup)
+- Railway will automatically detect the `backend/Dockerfile` and `frontend/Dockerfile` when you deploy the folders. Set up the matching environment variables, and you're good to go.
+
+### 3. VPS Deployment (Docker Compose)
+A production-grade `docker-compose.yml` is included in the root directory. To launch the frontend, backend, and a database instance altogether on your own Linux server, simply run:
+```bash
+docker-compose up --build -d
+```
+
+---
+
 ## 📂 Project Structure
 
 ```
@@ -166,6 +187,7 @@ Cnic-Parser/
 │   │   ├── database.py   # MongoDB Connection Client
 │   │   └── main.py       # FastAPI Entry Point
 │   ├── requirements.txt  # Python Dependencies
+│   ├── Dockerfile        # Container build definition for backend
 │   └── README.md         # Backend Documentation
 │
 ├── frontend/
@@ -176,7 +198,11 @@ Cnic-Parser/
 │   │   └── main.jsx      # React DOM hydration
 │   ├── package.json      # Frontend Dependencies
 │   ├── vite.config.js    # Vite configuration
+│   ├── Dockerfile        # Container build definition for frontend
+│   ├── nginx.conf        # Production Nginx configuration
 │   └── README.md         # Frontend Documentation
 │
+├── docker-compose.yml    # Root Docker orchestration config
 └── README.md             # Project Root Readme (This File)
 ```
+
